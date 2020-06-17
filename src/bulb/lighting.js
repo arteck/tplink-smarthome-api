@@ -1,34 +1,38 @@
 /* eslint camelcase: ["off"] */
-'use strict';
 
 const isEqual = require('lodash.isequal');
-
-let _lightState = {};
 
 /**
  * Lighting
  */
 class Lighting {
-  constructor (device, apiModuleName) {
+  lastState;
+
+  #lightState = {};
+
+  constructor(device, apiModuleName) {
     this.device = device;
     this.apiModuleName = apiModuleName;
 
-    this._lastState = { powerOn: null, lightState: null };
+    this.lastState = { powerOn: null, lightState: null };
   }
+
   /**
    * Returns cached results from last retrieval of `lightingservice.get_light_state`.
    * @return {Object}
    */
-  get lightState () {
-    return _lightState;
+  get lightState() {
+    return this.#lightState;
   }
+
   /**
    * @private
    */
-  set lightState (lightState) {
-    _lightState = lightState;
+  set lightState(lightState) {
+    this.#lightState = lightState;
     this.emitEvents();
   }
+
   /**
    * Bulb was turned on (`lightstate.on_off`).
    * @event Bulb#lightstate-on
@@ -52,25 +56,26 @@ class Lighting {
   /**
    * @private
    */
-  emitEvents () {
-    if (!_lightState) return;
-    let powerOn = (_lightState.on_off === 1);
+  emitEvents() {
+    if (!this.#lightState) return;
+    const powerOn = this.#lightState.on_off === 1;
 
-    if (this._lastState.powerOn !== powerOn) {
-      this._lastState.powerOn = powerOn;
+    if (this.lastState.powerOn !== powerOn) {
+      this.lastState.powerOn = powerOn;
       if (powerOn) {
-        this.device.emit('lightstate-on', _lightState);
+        this.device.emit('lightstate-on', this.#lightState);
       } else {
-        this.device.emit('lightstate-off', _lightState);
+        this.device.emit('lightstate-off', this.#lightState);
       }
     }
 
-    if (!isEqual(this._lastState.lightState, _lightState)) {
-      this._lastState.lightState = _lightState;
-      this.device.emit('lightstate-change', _lightState);
+    if (!isEqual(this.lastState.lightState, this.#lightState)) {
+      this.lastState.lightState = this.#lightState;
+      this.device.emit('lightstate-change', this.#lightState);
     }
-    this.device.emit('lightstate-update', _lightState);
+    this.device.emit('lightstate-update', this.#lightState);
   }
+
   /**
    * Get Bulb light state.
    *
@@ -78,12 +83,17 @@ class Lighting {
    * @param  {SendOptions} [sendOptions]
    * @return {Promise<Object, ResponseError>} parsed JSON response
    */
-  async getLightState (sendOptions) {
-    this.lightState = await this.device.sendCommand({
-      [this.apiModuleName]: { get_light_state: {} }
-    }, sendOptions);
+  async getLightState(sendOptions) {
+    this.lightState = await this.device.sendCommand(
+      {
+        [this.apiModuleName]: { get_light_state: {} },
+      },
+      null,
+      sendOptions
+    );
     return this.lightState;
   }
+
   /**
    * Sets Bulb light state (on/off, brightness, color, etc).
    *
@@ -100,20 +110,38 @@ class Lighting {
    * @param  {SendOptions} [sendOptions]
    * @return {Promise<boolean, ResponseError>}
    */
-  async setLightState ({ transition_period, on_off, mode, hue, saturation, brightness, color_temp, ignore_default = true }, sendOptions) {
-    let state = {};
-    if (ignore_default !== undefined) state.ignore_default = (ignore_default ? 1 : 0);
-    if (transition_period !== undefined) state.transition_period = transition_period;
-    if (on_off !== undefined) state.on_off = (on_off ? 1 : 0);
+  async setLightState(
+    {
+      transition_period,
+      on_off,
+      mode,
+      hue,
+      saturation,
+      brightness,
+      color_temp,
+      ignore_default = true,
+    },
+    sendOptions
+  ) {
+    const state = {};
+    if (ignore_default !== undefined)
+      state.ignore_default = ignore_default ? 1 : 0;
+    if (transition_period !== undefined)
+      state.transition_period = transition_period;
+    if (on_off !== undefined) state.on_off = on_off ? 1 : 0;
     if (mode !== undefined) state.mode = mode;
     if (hue !== undefined) state.hue = hue;
     if (saturation !== undefined) state.saturation = saturation;
     if (brightness !== undefined) state.brightness = brightness;
     if (color_temp !== undefined) state.color_temp = color_temp;
 
-    this.lightState = await this.device.sendCommand({
-      [this.apiModuleName]: { transition_light_state: state }
-    }, sendOptions);
+    this.lightState = await this.device.sendCommand(
+      {
+        [this.apiModuleName]: { transition_light_state: state },
+      },
+      null,
+      sendOptions
+    );
     return true;
   }
 }

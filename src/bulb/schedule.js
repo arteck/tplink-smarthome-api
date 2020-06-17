@@ -1,5 +1,4 @@
 /* eslint camelcase: ["off"] */
-'use strict';
 
 const Schedule = require('../shared/schedule');
 const { createScheduleRule } = require('../utils');
@@ -21,18 +20,23 @@ class BulbSchedule extends Schedule {
    * @param  {SendOptions}   [sendOptions]
    * @return {Promise<Object, ResponseError>} parsed JSON response
    */
-  async addRule ({ lightState, start, daysOfWeek, name = '', enable = true }, sendOptions) {
-    const rule = Object.assign({
+  async addRule(
+    { lightState, start, daysOfWeek, name = '', enable = true },
+    sendOptions
+  ) {
+    const rule = {
       s_light: lightState,
       name,
-      enable: (enable ? 1 : 0),
+      enable: enable ? 1 : 0,
       sact: 2,
       emin: -1,
-      etime_opt: -1
-    }, createScheduleRule({ start, daysOfWeek }));
+      etime_opt: -1,
+      ...createScheduleRule({ start, daysOfWeek }),
+    };
 
-    return Schedule.prototype.addRule.call(this, rule, sendOptions); // super.addRule(rule); // workaround babel bug
+    return Schedule.prototype.addRule.call(this, rule, null, sendOptions); // super.addRule(rule); // workaround babel bug
   }
+
   /**
    * Edits Schedule rule.
    *
@@ -46,18 +50,22 @@ class BulbSchedule extends Schedule {
    * @param  {SendOptions}   [sendOptions]
    * @return {Promise<Object, ResponseError>} parsed JSON response
    */
-  async editRule ({ id, lightState, start, daysOfWeek, name = '', enable = true }, sendOptions) {
-    const rule = Object.assign({
+  async editRule(
+    { id, lightState, start, daysOfWeek, name = '', enable = true },
+    sendOptions
+  ) {
+    const rule = {
       id,
       s_light: lightState,
       name,
-      enable: (enable ? 1 : 0),
+      enable: enable ? 1 : 0,
       sact: 2,
       emin: -1,
-      etime_opt: -1
-    }, createScheduleRule({ start, daysOfWeek }));
+      etime_opt: -1,
+      ...createScheduleRule({ start, daysOfWeek }),
+    };
 
-    return Schedule.prototype.editRule.call(this, rule, sendOptions); // super.addRule(rule); // workaround babel bug
+    return Schedule.prototype.editRule.call(this, rule, null, sendOptions); // super.addRule(rule); // workaround babel bug
   }
 }
 

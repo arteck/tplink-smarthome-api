@@ -1,9 +1,16 @@
-'use strict';
+const Bulb = require('./bulb');
+const Device = require('./device');
+const Client = require('./client');
+const Plug = require('./plug');
+const { ResponseError } = require('./utils');
 
 /**
  * @module tplink-smarthome-api
  */
 module.exports = {
-  Client: require('./client'),
-  ResponseError: require('./utils').ResponseError
+  Bulb,
+  Client,
+  Device,
+  Plug,
+  ResponseError,
 };

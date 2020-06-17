@@ -2,23 +2,20 @@ const util = require('util');
 
 const { Client } = require('tplink-smarthome-api');
 
-const client = new Client();
+const client = new Client({
+  defaultSendOptions: { timeout: 20000, transport: 'tcp' },
+});
 
 const logEvent = function logEvent(eventName, device, state) {
   const stateString = state != null ? util.inspect(state) : '';
   console.log(
     `${new Date().toISOString()} ${eventName} ${device.model} ${device.host}:${
       device.port
-    } ${stateString}`
+    } ${device.childId} ${stateString}`
   );
 };
 
-// Client events `device-*` also have `bulb-*` and `plug-*` counterparts.
-// Use those if you want only events for those types and not all devices.
-client.on('device-new', device => {
-  logEvent('device-new', device);
-  device.startPolling(5000);
-
+const monitorEvents = function monitorEvents(device) {
   // Device (Common) Events
   device.on('emeter-realtime-update', emeterRealtime => {
     logEvent('emeter-realtime-update', device, emeterRealtime);
@@ -44,26 +41,29 @@ client.on('device-new', device => {
     logEvent('in-use-update', device, inUse);
   });
 
-  // Bulb Events
-  device.on('lightstate-on', lightstate => {
-    logEvent('lightstate-on', device, lightstate);
-  });
-  device.on('lightstate-off', lightstate => {
-    logEvent('lightstate-off', device, lightstate);
-  });
-  device.on('lightstate-change', lightstate => {
-    logEvent('lightstate-change', device, lightstate);
-  });
-  device.on('lightstate-update', lightstate => {
-    logEvent('lightstate-update', device, lightstate);
-  });
-});
-client.on('device-online', device => {
-  logEvent('device-online', device);
-});
-client.on('device-offline', device => {
-  logEvent('device-offline', device);
-});
+  device.startPolling(5000);
+};
 
-console.log('Starting Device Discovery');
-client.startDiscovery();
+(async () => {
+  const device = await client.getDevice({ host: '10.0.1.136' });
+
+  console.log(device.alias);
+
+  if (!device.children) {
+    console.log('device has no children');
+    return;
+  }
+
+  device.children.forEach(child => {
+    console.log(child);
+  });
+
+  await Promise.all(
+    Array.from(device.children.keys(), async childId => {
+      const childPlug = await client.getDevice({ host: '10.0.1.136', childId });
+      monitorEvents(childPlug);
+    })
+  );
+
+  monitorEvents(device);
+})();

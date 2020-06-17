@@ -1,16 +1,18 @@
 {
   "presets": [
-    ["env", {
-      "targets": {
-        "node": "4.8"
-      },
-      exclude: ["transform-es2015-classes"]
-    }]
+    [
+      "@babel/preset-env",
+      {
+        "targets": {
+          "node": "10"
+        }
+      }
+    ]
   ],
+  "plugins": [["@babel/plugin-proposal-class-properties", { "loose": true }]],
   "env": {
     "test": {
-      "plugins": [ "istanbul" ]
+      "plugins": ["istanbul"]
     }
-  },
-  "plugins": ["transform-runtime", "transform-async-to-generator", "transform-object-entries"]
+  }
 }
